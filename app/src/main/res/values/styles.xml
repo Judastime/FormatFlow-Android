@@ -1,0 +1,3 @@
+<resources>
+  <style name="Theme.FormatFlow" parent="Theme.MaterialComponents.DayNight.NoActionBar"><item name="colorPrimary">#173F32</item><item name="colorSecondary">#277254</item><item name="android:fontFamily">sans</item><item name="android:navigationBarColor">#173F32</item></style>
+</resources>
