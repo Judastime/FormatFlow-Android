@@ -70,7 +70,12 @@ class MainActivity : AppCompatActivity() {
         continuation.forEach{(original,text)->val width=1240;val height=1754;val info=PdfDocument.PageInfo.Builder(width,height,pdf.pages.size+1).create();val p=pdf.startPage(info);p.canvas.drawColor(Color.WHITE);val note=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GRAY;textSize=18f};p.canvas.drawText("Continued from page $original",60f,55f,note);drawFitted(p.canvas,Rect(60,85,width-60,height-70),text,dst,true);pdf.finishPage(p)}
         contentResolver.openOutputStream(outputUri,"w")!!.use{pdf.writeTo(it)};pdf.close();renderer.close();fd.close();getPreferences(MODE_PRIVATE).edit().remove("last_page").apply()
     }
-    private suspend fun Translator.translateChunks(text:String):String{val pieces=text.split(Regex("(?<=[.!?。！？])\\s+")).fold(mutableListOf<String>()){a,s->if(a.isEmpty()||a.last().length+s.length>900)a.add(s)else a[a.lastIndex]=a.last()+" "+s;a};return pieces.joinToString(" "){translate(it).await()}}
+    private suspend fun Translator.translateChunks(text:String):String {
+        val pieces=text.split(Regex("(?<=[.!?。！？])\\s+")).fold(mutableListOf<String>()){a,s->if(a.isEmpty()||a.last().length+s.length>900)a.add(s)else a[a.lastIndex]=a.last()+" "+s;a}
+        val translated=mutableListOf<String>()
+        for(piece in pieces) translated += translate(piece).await()
+        return translated.joinToString(" ")
+    }
     private fun protect(text:String):Pair<String,List<String>>{val saved=mutableListOf<String>();val regex=Regex("\\b[A-Z][\\p{L}'’.-]*-(?:san|chan|kun|sama|sensei)\\b",RegexOption.IGNORE_CASE);return regex.replace(text){saved+=it.value;"ZXQ${saved.lastIndex}QXZ"} to saved}
     private fun String.restore(saved:List<String>):String{var out=this;saved.forEachIndexed{i,v->out=out.replace(Regex("ZXQ\\s*$i\\s*QXZ",RegexOption.IGNORE_CASE),v)};return out}
     private fun drawFitted(canvas:Canvas,box:Rect,text:String,lang:String,hyphenate:Boolean):String{
@@ -80,3 +85,4 @@ class MainActivity : AppCompatActivity() {
     }
     private fun wrap(text:String,paint:Paint,width:Float,lang:String,hyphenate:Boolean):List<String>{val noSpace=lang in listOf("ja","zh","th");val words=if(noSpace)text.map{it.toString()}else text.split(Regex("\\s+"));val lines=mutableListOf<String>();var line="";val join=if(noSpace)"" else " ";for(word in words){val test=if(line.isEmpty())word else line+join+word;if(paint.measureText(test)<=width){line=test;continue};if(line.isNotEmpty())lines+=line;if(paint.measureText(word)<=width){line=word;continue};var part="";for(ch in word){val suffix=if(hyphenate&&!noSpace)"-" else "";if(part.isNotEmpty()&&paint.measureText(part+ch+suffix)>width){lines+=part+suffix;part=ch.toString()}else part+=ch};line=part};if(line.isNotEmpty())lines+=line;return lines}
 }
+
