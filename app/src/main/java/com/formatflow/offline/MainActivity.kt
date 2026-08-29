@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContentView(R.layout.activity_main)
         source=findViewById(R.id.sourceLanguage);target=findViewById(R.id.targetLanguage);progress=findViewById(R.id.progress);status=findViewById(R.id.status);translate=findViewById(R.id.translate)
-        val adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,languages);source.adapter=adapter;target.adapter=adapter;source.setSelection(languages.indexOfFirst{it.code=="vi"});target.setSelection(languages.indexOfFirst{it.code=="en"})
+        val adapter=ArrayAdapter(this,R.layout.spinner_item,languages);adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);source.adapter=adapter;target.adapter=adapter;source.setSelection(languages.indexOfFirst{it.code=="vi"});target.setSelection(languages.indexOfFirst{it.code=="en"})
         findViewById<Button>(R.id.choosePdf).setOnClickListener{choose.launch(arrayOf("application/pdf"))};translate.setOnClickListener{if(input==null)Toast.makeText(this,"Choose a PDF first",Toast.LENGTH_SHORT).show()else create.launch("translated-${fileName(input!!)}")}
     }
     private fun fileName(uri:Uri):String{contentResolver.query(uri,null,null,null,null)?.use{c->val i=c.getColumnIndex(OpenableColumns.DISPLAY_NAME);if(c.moveToFirst()&&i>=0)return c.getString(i)};return "document.pdf"}
@@ -70,12 +70,7 @@ class MainActivity : AppCompatActivity() {
         continuation.forEach{(original,text)->val width=1240;val height=1754;val info=PdfDocument.PageInfo.Builder(width,height,pdf.pages.size+1).create();val p=pdf.startPage(info);p.canvas.drawColor(Color.WHITE);val note=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.GRAY;textSize=18f};p.canvas.drawText("Continued from page $original",60f,55f,note);drawFitted(p.canvas,Rect(60,85,width-60,height-70),text,dst,true);pdf.finishPage(p)}
         contentResolver.openOutputStream(outputUri,"w")!!.use{pdf.writeTo(it)};pdf.close();renderer.close();fd.close();getPreferences(MODE_PRIVATE).edit().remove("last_page").apply()
     }
-    private suspend fun Translator.translateChunks(text:String):String {
-        val pieces=text.split(Regex("(?<=[.!?。！？])\\\\s+")).fold(mutableListOf<String>()){a,s->if(a.isEmpty()||a.last().length+s.length>900)a.add(s)else a[a.lastIndex]=a.last()+" "+s;a}
-        val translated=mutableListOf<String>()
-        for(piece in pieces) translated += translate(piece).await()
-        return translated.joinToString(" ")
-    }
+    private suspend fun Translator.translateChunks(text:String):String{val pieces=text.split(Regex("(?<=[.!?。！？])\\s+")).fold(mutableListOf<String>()){a,s->if(a.isEmpty()||a.last().length+s.length>900)a.add(s)else a[a.lastIndex]=a.last()+" "+s;a};return pieces.joinToString(" "){translate(it).await()}}
     private fun protect(text:String):Pair<String,List<String>>{val saved=mutableListOf<String>();val regex=Regex("\\b[A-Z][\\p{L}'’.-]*-(?:san|chan|kun|sama|sensei)\\b",RegexOption.IGNORE_CASE);return regex.replace(text){saved+=it.value;"ZXQ${saved.lastIndex}QXZ"} to saved}
     private fun String.restore(saved:List<String>):String{var out=this;saved.forEachIndexed{i,v->out=out.replace(Regex("ZXQ\\s*$i\\s*QXZ",RegexOption.IGNORE_CASE),v)};return out}
     private fun drawFitted(canvas:Canvas,box:Rect,text:String,lang:String,hyphenate:Boolean):String{
