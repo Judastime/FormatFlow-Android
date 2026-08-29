@@ -1,0 +1,19 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F4F4EE">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FormatFlow" android:textColor="#173F32" android:textSize="30sp" android:textStyle="bold"/>
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="OFFLINE · UNLIMITED PDF TRANSLATOR" android:textColor="#277254" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="24dp"/>
+  <com.google.android.material.button.MaterialButton android:id="@+id/choosePdf" android:layout_width="match_parent" android:layout_height="56dp" android:text="Choose PDF"/>
+  <TextView android:id="@+id/fileName" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No PDF selected" android:padding="12dp"/>
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Original language" android:textStyle="bold"/>
+  <Spinner android:id="@+id/sourceLanguage" android:layout_width="match_parent" android:layout_height="52dp"/>
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Translate to" android:textStyle="bold" android:layout_marginTop="8dp"/>
+  <Spinner android:id="@+id/targetLanguage" android:layout_width="match_parent" android:layout_height="52dp"/>
+  <CheckBox android:id="@+id/protectNames" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Protect names and -san, -chan, -kun, -sama, sensei" android:checked="true"/>
+  <CheckBox android:id="@+id/hyphenate" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hyphenate only words that cannot fit" android:checked="true"/>
+  <CheckBox android:id="@+id/continuationPages" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Add continuation pages instead of cutting text" android:checked="true"/>
+  <com.google.android.material.button.MaterialButton android:id="@+id/translate" android:layout_width="match_parent" android:layout_height="56dp" android:text="Translate &amp; save PDF" android:layout_marginTop="18dp"/>
+  <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:layout_marginTop="20dp"/>
+  <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ready" android:textColor="#526159" android:paddingTop="8dp"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Language models download once over Wi-Fi. After that, translation works offline without a word quota." android:textColor="#66736B" android:textSize="12sp" android:paddingTop="22dp"/>
+ </LinearLayout>
+</ScrollView>
