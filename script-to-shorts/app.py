@@ -4,6 +4,7 @@ import os
 import queue
 import re
 import subprocess
+import sys
 import threading
 import time
 import tkinter as tk
@@ -34,6 +35,11 @@ STOP_WORDS = {
     "her", "she", "him", "and", "but", "for", "the", "was", "are", "our", "out",
     "all", "not", "who", "why", "how", "its", "it's", "said", "says", "just",
 }
+
+
+def bundled_path(*parts):
+    root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return root.joinpath(*parts)
 
 
 def load_config():
@@ -232,12 +238,14 @@ class Generator:
                     "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", str(clip)
                 ], self.log)
             else:
-                self.log(f"Scene {index + 1}: using a key-free animated horror background")
-                colors = ["0x100716", "0x07101a", "0x16070b", "0x0b0b12", "0x130d05", "0x080f0d"]
+                self.log(f"Scene {index + 1}: using a built-in cinematic horror scene")
+                visual_names = ["house.jpg", "hallway.jpg", "bedroom.jpg", "hallway.jpg", "bedroom.jpg", "house.jpg"]
+                visual = bundled_path("assets", visual_names[index % len(visual_names)])
+                if not visual.is_file():
+                    raise RuntimeError("Built-in horror visuals are missing. Download the latest app version.")
                 run_process([
-                    self.ffmpeg, "-y", "-f", "lavfi", "-i",
-                    f"color=c={colors[index % len(colors)]}:s=1080x1920:r=30:d={clip_length:.3f}",
-                    "-vf", "noise=alls=16:allf=t+u,vignette=PI/3,eq=contrast=1.25:brightness=-0.05",
+                    self.ffmpeg, "-y", "-loop", "1", "-i", str(visual), "-t", f"{clip_length:.3f}",
+                    "-vf", "scale=1200:2134:force_original_aspect_ratio=increase,crop=1200:2134,zoompan=z='min(zoom+0.0007,1.12)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,eq=contrast=1.08:brightness=0.05:saturation=0.9",
                     "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", str(clip)
                 ], self.log)
             rendered.append(clip)

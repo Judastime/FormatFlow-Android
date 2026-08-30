@@ -32,6 +32,7 @@ jobs:
           --name ScriptToShorts
           --collect-all edge_tts
           --collect-all imageio_ffmpeg
+          --add-data "assets;assets"
           app.py
       - name: Upload EXE
         uses: actions/upload-artifact@v4
