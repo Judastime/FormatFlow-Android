@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import queue
+import random
 import re
 import subprocess
 import sys
@@ -217,6 +218,8 @@ class Generator:
         scenes = split_scenes(script, 6)
         clip_length = max(3.0, duration / len(scenes) + 0.4)
         rendered = []
+        built_in_visuals = ["house.jpg", "hallway.jpg", "bedroom.jpg"]
+        random.Random(script).shuffle(built_in_visuals)
         self.log(f"Preparing {len(scenes)} visual scenes...")
         for index, scene in enumerate(scenes):
             raw = job / f"stock-{index}.mp4"
@@ -239,8 +242,7 @@ class Generator:
                 ], self.log)
             else:
                 self.log(f"Scene {index + 1}: using a built-in cinematic horror scene")
-                visual_names = ["house.jpg", "hallway.jpg", "bedroom.jpg", "hallway.jpg", "bedroom.jpg", "house.jpg"]
-                visual = bundled_path("assets", visual_names[index % len(visual_names)])
+                visual = bundled_path("assets", built_in_visuals[index % len(built_in_visuals)])
                 if not visual.is_file():
                     raise RuntimeError("Built-in horror visuals are missing. Download the latest app version.")
                 run_process([
