@@ -170,7 +170,7 @@ def download_stock(query, api_key, destination, page=1):
         timeout=30,
     )
     if response.status_code == 401:
-        raise RuntimeError("The Pexels API key is invalid. Open Settings and enter a valid key.")
+        return False
     response.raise_for_status()
     videos = response.json().get("videos", [])
     if not videos:
@@ -216,17 +216,30 @@ class Generator:
             raw = job / f"stock-{index}.mp4"
             query = search_terms(scene)
             self.log(f"Scene {index + 1}: searching “{query}”")
-            found = download_stock(query, api_key, raw, page=index + 1)
-            if not found:
-                found = download_stock("dark cinematic mystery", api_key, raw, page=index + 1)
-            if not found:
-                raise RuntimeError(f"No stock footage found for scene {index + 1}.")
             clip = job / f"scene-{index}.mp4"
-            run_process([
-                self.ffmpeg, "-y", "-stream_loop", "-1", "-i", str(raw), "-t", f"{clip_length:.3f}",
-                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,eq=brightness=-0.08:saturation=0.75",
-                "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", str(clip)
-            ], self.log)
+            found = False
+            if api_key:
+                try:
+                    found = download_stock(query, api_key, raw, page=index + 1)
+                    if not found:
+                        found = download_stock("dark cinematic mystery", api_key, raw, page=index + 1)
+                except requests.RequestException:
+                    found = False
+            if found:
+                run_process([
+                    self.ffmpeg, "-y", "-stream_loop", "-1", "-i", str(raw), "-t", f"{clip_length:.3f}",
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,eq=brightness=-0.08:saturation=0.75",
+                    "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", str(clip)
+                ], self.log)
+            else:
+                self.log(f"Scene {index + 1}: using a key-free animated horror background")
+                colors = ["0x100716", "0x07101a", "0x16070b", "0x0b0b12", "0x130d05", "0x080f0d"]
+                run_process([
+                    self.ffmpeg, "-y", "-f", "lavfi", "-i",
+                    f"color=c={colors[index % len(colors)]}:s=1080x1920:r=30:d={clip_length:.3f}",
+                    "-vf", "noise=alls=16:allf=t+u,vignette=PI/3,eq=contrast=1.25:brightness=-0.05",
+                    "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", str(clip)
+                ], self.log)
             rendered.append(clip)
             self.progress(20 + int(45 * (index + 1) / len(scenes)))
 
@@ -252,9 +265,6 @@ class Generator:
 def run_web_job(job_id, script, label):
     config = load_config()
     key = config.get("pexels_key", "").strip()
-    if not key:
-        WEB_JOBS[job_id].update(status="error", message="Open the renderer Settings and add your Pexels API key.")
-        return
     try:
         output_dir = Path(config.get("output_dir", str(DEFAULT_OUTPUT)))
         def log(message):
@@ -410,7 +420,7 @@ class App(tk.Tk):
         win.configure(bg="#0d0b12")
         frame = ttk.Frame(win, padding=24)
         frame.pack(fill="both", expand=True)
-        ttk.Label(frame, text="Pexels API key").grid(row=0, column=0, sticky="w")
+        ttk.Label(frame, text="Pexels API key (optional)").grid(row=0, column=0, sticky="w")
         key = ttk.Entry(frame, width=52, show="•")
         key.insert(0, self.config_data.get("pexels_key", ""))
         key.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(5, 15))
@@ -437,9 +447,6 @@ class App(tk.Tk):
             messagebox.showwarning(APP_NAME, "Paste a script first.")
             return
         key = self.config_data.get("pexels_key", "").strip()
-        if not key:
-            messagebox.showwarning(APP_NAME, "Open Settings and enter your free Pexels API key.")
-            return
         self.generate_button.configure(state="disabled")
         self.progress["value"] = 0
         threading.Thread(target=self.worker, args=(script, self.part.get(), key), daemon=True).start()
