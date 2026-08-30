@@ -1,0 +1,41 @@
+name: Build Script to Shorts EXE
+
+on:
+  push:
+    branches: [script-to-shorts-windows-build]
+    paths:
+      - "script-to-shorts/**"
+      - ".github/workflows/build-script-to-shorts.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: script-to-shorts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: script-to-shorts/requirements.txt
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller==6.16.0
+      - name: Build standalone Windows app
+        run: >-
+          pyinstaller --noconfirm --clean --windowed --onefile
+          --name ScriptToShorts
+          --collect-all edge_tts
+          --collect-all imageio_ffmpeg
+          app.py
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScriptToShorts-Windows
+          path: script-to-shorts/dist/ScriptToShorts.exe
+          if-no-files-found: error
